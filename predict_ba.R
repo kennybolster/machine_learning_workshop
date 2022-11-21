@@ -61,3 +61,19 @@ p = ggplot(test_idp) + geom_point(aes(barium, pred)) +
   ggtitle('All stations - test')
 plot(p)
 print(cor(test_idp$barium, test_idp$pred))
+
+onecruiseout <-  function(c){
+  print(c)
+  holdout = allstation_idp %>% filter(cruise != c)
+  trainids = sample(nrow(holdout), .7*nrow(holdout))
+  trainset = holdout[trainids,]
+  testset = holdout[-trainids,]
+  model = randomForest(barium ~ temp + sal + phosphate + silicate, data = trainset)
+  preds = predict(model, testset)
+  return(cor(testset$barium, preds))
+}
+
+holdout_corrs = sapply(unique(allstation_idp$cruise), onecruiseout)
+print(holdout_corrs)
+
+
