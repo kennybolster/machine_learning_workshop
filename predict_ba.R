@@ -25,11 +25,13 @@ train_idp = allvar_idp[trainind,]
 test_idp = allvar_idp[-trainind,]
 
 # run random forest on train set
-allvar_rf = randomForest(barium ~ temp + sal + oxy + phosphate + nitrate + silicate,
+allvar_rf = randomForest(barium ~ temp + sal + oxy + phosphate + nitrate + 
+                           silicate,
                          data = train_idp)
 train_idp$pred = predict(allvar_rf, train_idp)
 # plot results for train set
-ggplot(train_idp) + geom_point(aes(barium, pred)) + ggtitle('All variables - training')
+ggplot(train_idp) + geom_point(aes(barium, pred)) + 
+  ggtitle('All variables - training')
 plot(last_plot())
 print(cor(train_idp$barium, train_idp$pred))
 
@@ -51,7 +53,8 @@ allstat_rf = randomForest(barium ~ temp + sal + phosphate + silicate,
                          data = train_idp)
 train_idp$pred = predict(allstat_rf, train_idp)
 # plot results for train set
-ggplot(train_idp) + geom_point(aes(barium, pred)) + ggtitle('All stations - training')
+ggplot(train_idp) + geom_point(aes(barium, pred)) + 
+  ggtitle('All stations - training')
 plot(last_plot())
 print(cor(train_idp$barium, train_idp$pred))
 
@@ -62,18 +65,25 @@ p = ggplot(test_idp) + geom_point(aes(barium, pred)) +
 plot(p)
 print(cor(test_idp$barium, test_idp$pred))
 
+# write function to hold out one cruise at a time
 onecruiseout <-  function(c){
   print(c)
   holdout = allstation_idp %>% filter(cruise != c)
   trainids = sample(nrow(holdout), .7*nrow(holdout))
   trainset = holdout[trainids,]
   testset = holdout[-trainids,]
-  model = randomForest(barium ~ temp + sal + phosphate + silicate, data = trainset)
+  model = randomForest(barium ~ temp + sal + phosphate + silicate, 
+                       data = trainset)
   preds = predict(model, testset)
   return(cor(testset$barium, preds))
 }
 
+# apply that function to each cruise and plot the new OOB R^2
 holdout_corrs = sapply(unique(allstation_idp$cruise), onecruiseout)
 print(holdout_corrs)
 
-
+# predict woa concentrations using both models
+allstat_woa <- predict(allstat_rf, woa)
+allvar_woa <- predict(allvar_rf, woa)
+p <- ggplot() + geom_point(mapping = aes(allvar_woa, allstat_woa))
+plot(p)
